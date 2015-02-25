@@ -6,5 +6,7 @@ SOURCES += Signature.c Cypher.c \
     Hash.c
 
 HEADERS += \
-    Cypher.h
+    Cypher.h \
+    Log.h \
+    Hash.h
 

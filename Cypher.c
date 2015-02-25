@@ -1,24 +1,10 @@
-#include <stdio.h>
 #include <linux/types.h>
+
+#include "Log.h"
 
 #define COUNT_ROUNDS  4
 
-#ifdef DEBUG
 
-#define log(value, ...) printf(value, __VA_ARGS__)
-#define log_int(value)  printf("[%s] %s = %d\n", __func__, #value, value)
-#define log_hexint(value)  printf("[%s] %s = %x\n", __func__, #value, value)
-#define log_hexlong(value)  printf("[%s] %s = %llx\n", __func__, #value, value)
-
-#else
-
-#define log(value,...)
-#define log_int(value)
-#define log_text(value,...)
-#define log_hexint(value)
-#define log_hexlong(value)
-
-#endif
 typedef struct {
     __u32 right;
     __u32 left;

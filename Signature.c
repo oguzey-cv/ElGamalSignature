@@ -2,6 +2,7 @@
 #include <linux/types.h>
 
 #include "Cypher.h"
+#include "Hash.h"
 
 #define log_hexlong(value)  printf("[%s]%s = %llx\n", __func__, #value, value)
 
