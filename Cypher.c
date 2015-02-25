@@ -1,37 +1,24 @@
-#include <stdint.h>
+#include <stdio.h>
 #include <linux/types.h>
 
 #define COUNT_ROUNDS  4
 
-#define print_bit_uint32(value) do {                  \
-    printf("[%s:%d]%s = ", __func__, __LINE__, #value);                        \
-    __u32 tmp = 0;                               \
-    int i = 0;                                      \
-    int size = sizeof(__u32) * 8;                \
-    for (i = size - 1;i >= 0; --i) {                          \
-        tmp = 1;                                   \
-        tmp <<= i;                                 \
-        printf("%s", (tmp & value) ? "1" : "0");   \
-    }                                               \
-    printf("\n");                                   \
-    } while(0)
+#ifdef DEBUG
 
-#define print_bit_uint8(value) do {                  \
-    printf("[%s:%d]%s = ", __func__, __LINE__, #value);                        \
-    __u32 tmp = 0;                               \
-    int i = 0;                                      \
-    int size = sizeof(__u8) * 8;                \
-    for (i = size - 1;i >= 0; --i) {                          \
-        tmp = 1;                                   \
-        tmp <<= i;                                 \
-        printf("%s", (tmp & value) ? "1" : "0");   \
-    }                                               \
-    printf("\n");                                   \
-    } while(0)
+#define log(value, ...) printf(value, __VA_ARGS__)
+#define log_int(value)  printf("[%s] %s = %d\n", __func__, #value, value)
+#define log_hexint(value)  printf("[%s] %s = %x\n", __func__, #value, value)
+#define log_hexlong(value)  printf("[%s] %s = %llx\n", __func__, #value, value)
 
-#define log_int(value)  printf("%s = %d\n", #value, value)
-#define log_hexint(value)  printf("[%s]%s = %x\n", __func__, #value, value)
+#else
 
+#define log(value,...)
+#define log_int(value)
+#define log_text(value,...)
+#define log_hexint(value)
+#define log_hexlong(value)
+
+#endif
 typedef struct {
     __u32 right;
     __u32 left;
@@ -63,26 +50,52 @@ static __u8 s_table[] = {0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0
             0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0,
             0x54, 0xbb, 0x16};
 
+static __u32 nonlinear_func(__u32 a_part);
+static __u32 circle_shift_left(__u32 a_number, __u32 a_count);
+static __u32 round_func(__u32 a_key, __u32 a_right);
+static void u64_to_block(Block *a_block, __u64 a_number);
+static __u64 block_to_u64(const Block *a_block);
+static void generate_roud_keys(__u64 a_key, __u32 *a_keys);
+
+
+__u64 encrypt(__u64 a_input, __u64 a_key)
+{
+    __u32 keys[COUNT_ROUNDS];
+    Block current;
+    Block next;
+
+    generate_roud_keys(a_key, keys);
+
+    u64_to_block(&current, a_input);
+    int round = 0;
+
+    log("Round %d\n", round);
+    log("\t L%d = %x\n", round, current.left);
+    log("\t R%d = %x\n", round, current.right);
+
+    for (;round < COUNT_ROUNDS; ++round) {
+        next.left = round_func(keys[round], current.right) ^ current.left;
+        next.right = current.left;
+        current.left = next.left;
+        current.right = next.right;
+
+        log("Round %d\n", round + 1);
+        log("\t L%d = %8.0x\n", round + 1, next.left);
+        log("\t R%d = %8.0x\n", round + 1, next.right);
+    }
+    return block_to_u64(&current);
+}
 
 static __u32 nonlinear_func(__u32 a_part)
 {
     __u32 output = 0;
     __u8 tmp = 0;
+    const int size_block_in_bytes = 4;
 
-    log_hexint(a_part);
     int i = 0;
-    for (;i < SIZE_BLOCK; ++i) {
-
-        tmp = (a_number >> 8 * i) & 0xff;
-
-        log_int(i);
-        log_hexint(tmp);
-
-        tmp = s_table[tmp];
-
-        log_hexint(tmp);
-        output += (tmp << 8 * i);
-        log_hexint(output);
+    for (;i < size_block_in_bytes; ++i) {
+        tmp = (a_part >> 8 * i) & 0xff;
+        output += (s_table[tmp] << 8 * i);
     }
     return output;
 }
@@ -90,62 +103,64 @@ static __u32 nonlinear_func(__u32 a_part)
 static __u32 circle_shift_left(__u32 a_number, __u32 a_count)
 {
     __u32 count = a_count % 32;
-    __u32 top = a_number << count;
-    __u32 bottom = a_number >> 32 - count;
-    __u32 ret = top + bottom;
-    print_bit_uint32(top);
-    print_bit_uint32(bottom);
-    print_bit_uint32(ret);
-    return ret;
+    return (a_number << count) + (a_number >> (32 - count));
 }
 
 static __u32 round_func(__u32 a_key, __u32 a_right)
 {
     __u32 output = 0;
-    output = nonlinear_func(a_key, a_right);
+    output = nonlinear_func(a_key ^ a_right);
     output = circle_shift_left(output, 13);
-    log_hexint(output);
     return output;
 }
 
-#define to_block(block, uint64)                     \
-    do {                                            \
-        block.left = uint64 & 0xffffffff;           \
-        block.right = (uint64 >> 32) & 0xffffffff;  \
-    } while (0)
+static void u64_to_block(Block *a_block, __u64 a_number)
+{
+    a_block->left = 0;
+    a_block->right = 0;
+    __u32 tmp = 0;
+    int i = 0;
+
+    tmp = a_number & 0xffffffff;
+    for (i = 0;i < 4; ++i) {
+        a_block->right += ((tmp >> (i * 8)) & 0xff) << (3 - i) * 8;
+    }
+
+    tmp = (a_number >> 32) & 0xffffffff;
+    for (i = 0;i < 4; ++i) {
+        a_block->left += ((tmp >> (i * 8)) & 0xff) << (3 - i) * 8;
+    }
+}
+
+static __u64 block_to_u64(const Block *a_block)
+{
+    __u64 output = 0;
+    int i;
+    for (i = 0;i < 4; ++i) {
+        output += ((a_block->right >> (i * 8)) & 0xff) << (3 - i) * 8;
+    }
+    output <<= 32;
+    for (i = 0;i < 4; ++i) {
+        output += ((a_block->left >> (i * 8)) & 0xff) << (3 - i) * 8;
+    }
+    return output;
+
+}
 
 static void generate_roud_keys(__u64 a_key, __u32 *a_keys)
 {
     Block K;
-    to_block(K, a_key);
+    u64_to_block(&K, a_key);
 
     a_keys[0] = K.left;
     a_keys[1] = K.right;
     a_keys[2] = ~K.right;
     a_keys[3] = ~K.left;
+    log("Generated keys:\n%s", "");
+    log("\tkey0 = %8.0x\n", a_keys[0]);
+    log("\tkey1 = %8.0x\n", a_keys[1]);
+    log("\tkey2 = %8.0x\n", a_keys[2]);
+    log("\tkey3 = %8.0x\n", a_keys[3]);
 }
 
-static inline void perform_roud(Block *a_current, Block *a_next, __u32 a_key)
-{
-    a_next->left = round_func(a_key, a_current->right) ^ a_current->left;
-    a_next->right = a_current->left;
-}
 
-__u64 encrypt(__u64 a_input, __u64 a_key)
-{
-    __u64 output = 0;
-    __u32 keys[COUNT_ROUNDS];
-    Block current;
-    Block next;
-
-    generate_roud_keys(a_key, keys);
-
-    to_block(current, a_input);
-    int round = 0;
-    for (;round < COUNT_ROUNDS; ++round) {
-        perform_roud(&current, &next, keys[round]);
-        current.left = next.left;
-        current.right = next.right;
-    }
-
-}
