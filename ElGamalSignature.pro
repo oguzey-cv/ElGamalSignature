@@ -2,8 +2,9 @@ TEMPLATE = app
 CONFIG += console
 CONFIG -= qt
 
-SOURCES += Signature.c Cypher.c \
-    Hash.c
+SOURCES += Cypher.c \
+    Hash.c \
+    main.c
 
 HEADERS += \
     Cypher.h \

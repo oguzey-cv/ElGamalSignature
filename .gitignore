@@ -30,3 +30,4 @@
 
 #User and temporary files
 *.user
+build/

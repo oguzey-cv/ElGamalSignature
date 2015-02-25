@@ -7,8 +7,8 @@
 
 #define log(value, ...) printf(value, __VA_ARGS__)
 #define log_int(value)  printf("[%s] %s = %d\n", __func__, #value, value)
-#define log_hexint(value)  printf("[%s] %s = %x\n", __func__, #value, value)
-#define log_hexlong(value)  printf("[%s] %s = %llx\n", __func__, #value, value)
+#define log_hexint(value)  printf("[%s] %s = %08x\n", __func__, #value, value)
+#define log_hexlong(value)  printf("[%s] %s = %016llx\n", __func__, #value, value)
 
 #else
 

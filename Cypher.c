@@ -54,10 +54,10 @@ __u64 encrypt(__u64 a_input, __u64 a_key)
 
     u64_to_block(&current, a_input);
     int round = 0;
-
+    log("--------------cypher encrypt start-----------%s\n", "");
     log("Round %d\n", round);
-    log("\t L%d = %x\n", round, current.left);
-    log("\t R%d = %x\n", round, current.right);
+    log("\t L%d = %08x\n", round, current.left);
+    log("\t R%d = %08x\n", round, current.right);
 
     for (;round < COUNT_ROUNDS; ++round) {
         next.left = round_func(keys[round], current.right) ^ current.left;
@@ -66,9 +66,10 @@ __u64 encrypt(__u64 a_input, __u64 a_key)
         current.right = next.right;
 
         log("Round %d\n", round + 1);
-        log("\t L%d = %8.0x\n", round + 1, next.left);
-        log("\t R%d = %8.0x\n", round + 1, next.right);
+        log("\t L%d = %08x\n", round + 1, next.left);
+        log("\t R%d = %08x\n", round + 1, next.right);
     }
+    log("--------------cypher encrypt end-----------%s\n", "");
     return block_to_u64(&current);
 }
 
@@ -143,10 +144,10 @@ static void generate_roud_keys(__u64 a_key, __u32 *a_keys)
     a_keys[2] = ~K.right;
     a_keys[3] = ~K.left;
     log("Generated keys:\n%s", "");
-    log("\tkey0 = %8.0x\n", a_keys[0]);
-    log("\tkey1 = %8.0x\n", a_keys[1]);
-    log("\tkey2 = %8.0x\n", a_keys[2]);
-    log("\tkey3 = %8.0x\n", a_keys[3]);
+    log("\tkey0 = %08x\n", a_keys[0]);
+    log("\tkey1 = %08x\n", a_keys[1]);
+    log("\tkey2 = %08x\n", a_keys[2]);
+    log("\tkey3 = %08x\n", a_keys[3]);
 }
 
 
