@@ -4,7 +4,8 @@ CONFIG -= qt
 
 SOURCES += Cypher.c \
     Hash.c \
-    main.c
+    main.c \
+    test.c
 
 HEADERS += \
     Cypher.h \

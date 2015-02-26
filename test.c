@@ -23,7 +23,7 @@ static size_t read_data(char **buff, const char *a_path)
         size++;
     }
     fseek(file, 0, SEEK_SET);
-    log("Will read %d bytes\n", size);
+    printf("Will read %d bytes\n", size);
     data = malloc(size);
     memset(data, 0, size);
     i = 0;
@@ -37,10 +37,10 @@ fail:
     return size;
 }
 
-static size_t get_data(__u64 **a_numbers, const char *a_path)
+void main (void)
 {
     char * data = NULL;
-    size_t size = read_data(&data, a_path);
+    size_t size = read_data(&data, "./test2");
     size_t amount = size;
     if (size % 16 != 0) {
         amount = (size / 16);
@@ -74,52 +74,5 @@ static size_t get_data(__u64 **a_numbers, const char *a_path)
         }
     }
     free(data);
-    *a_numbers = numbers;
-    return amount;
-}
-
-static __u64 wrap_hash_calculate(const char *a_path)
-{
-    __u64 *input = NULL;
-    size_t size = get_data(&input, a_path);
-
-    log("Input data is %s", "");
-    int i = 0;
-    for (; i < size; ++i) {
-        log("%llx  ", input[i]);
-    }
-    log("\n%s", "");
-    __u64 output = hash_calculate(input, size);
-
-    log_hexlong(output);
-
-    return output;
-}
-
-static PyObject* py_hash_calc(PyObject* self, PyObject* args)
-{
-    const char *path;
-
-    if (!PyArg_ParseTuple(args, "s", &path)) {
-        return NULL;
-    }
-    log("Path provide %s\n", path);
-    __u64 out = wrap_hash_calculate(path);
-    return Py_BuildValue("K", out);
-}
-
-/*
- * Bind Python function names to our C functions
- */
-static PyMethodDef hash_methods[] = {
-  {"get_hash", py_hash_calc, METH_VARARGS, "Calculate hash!"},
-  {NULL, NULL}
-};
-
-/*
- * Python calls this to let us initialize our module
- */
-PyMODINIT_FUNC inithashModule(void)
-{
-  (void) Py_InitModule("hashModule", hash_methods);
+    return numbers;
 }
