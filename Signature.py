@@ -3,14 +3,25 @@ import hashModule
 import math
 import sys
 import os
+import re
 
 path = str(sys.argv[1])
+
+def get_number(hex_number):
+	number = re.findall('..', hex_number)
+	return int("".join(reversed(number)), 16)
+
+
+# p = get_number("AF5228967057FE1CB84B92511BE89A47")
+# a = get_number("9E93A4096E5416CED0242228014B67B5")
+# q = get_number("57A9144B382BFF0E5C25C9288DF44D23")
 
 p = int("AF5228967057FE1CB84B92511BE89A47", 16)
 a = int("9E93A4096E5416CED0242228014B67B5", 16)
 q = int("57A9144B382BFF0E5C25C9288DF44D23", 16)
 
-x = int(os.urandom(16).encode('hex'), 16)
+#x = int(os.urandom(16).encode('hex'), 16)
+x = int("74445F42F8DCD66C0343B77ADD7AD38B", 16)
 y = pow(a, x, p)
 
 print "p is {0}".format(format(p, "032x"))
@@ -20,16 +31,21 @@ print "x is {0}".format(format(x, "032x"))
 print "y is {0}".format(format(y, "032x"))
 
 
+
 hash = hashModule.get_hash(path)
 str_hash = format(hash, "016x")
 print "hash is {0}".format(str_hash)
 
 H = str_hash + "00ffffffffffff00"
+H = re.findall('..', H)
+H = "".join(reversed(H))
 H = int(H, 16)
 
 print "H is {0}".format(format(H, "032x"))
 
-U = int(os.urandom(16).encode('hex'), 16)
+#U = int(os.urandom(16).encode('hex'), 16)
+
+U = int("1458DA6E9B624A5D2999A200E88C3842", 16)
 
 print "U is {0}".format(format(U, "032x"))
 
