@@ -2,13 +2,13 @@ TEMPLATE = app
 CONFIG += console
 CONFIG -= qt
 
-SOURCES += Cypher.c \
-    Hash.c \
-    main.c \
-    test.c
+SOURCES += hash/src/Cypher.c \
+    hash/src/Hash.c \
+    hash/src/main.c \
+    hash/src/test.c
 
 HEADERS += \
-    Cypher.h \
-    Log.h \
-    Hash.h
+    hash/src/Cypher.h \
+    hash/src/Log.h \
+    hash/src/Hash.h
 
