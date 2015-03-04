@@ -10,6 +10,7 @@ parser = OptionParser()
 parser.add_option("-d", "--data", dest="data", help="Path to a file with data")
 parser.add_option("-r", "--report", dest="report", help="Path to a file with report")
 parser.add_option("-a", "--action", dest="action", help="A action which will be executed (calc, check)")
+parser.add_option("-p", "--path", dest="path", help="Path to file during check.")
 (options, args) = parser.parse_args()
 
 ##########################################################
@@ -23,13 +24,19 @@ def get_common_parameters():
 	q = int("57A9144B382BFF0E5C25C9288DF44D23", 16)
 	return (a, q, p)
 
+def hash_to_number(hash):
+	if isinstance(hash, int) or isinstance(hash, long):
+		H = format(hash, "016x") + "00ffffffffffff00"
+	else:
+		H = hash + "00ffffffffffff00"
+	H = re.findall('..', H)
+	H = "".join(reversed(H))
+	return int(H, 16)
+
 def get_signature(path):
 	a, q, p = get_common_parameters()
 	hash = hashModule.get_hash(path)
-	H = format(hash, "016x") + "00ffffffffffff00"
-	H = re.findall('..', H)
-	H = "".join(reversed(H))
-	H = int(H, 16)
+	H = hash_to_number(hash)
 
 	x = int(os.urandom(16).encode('hex'), 16)
 	x = x % (p + 1)
@@ -64,7 +71,8 @@ def get_signature(path):
 	return {"H" : H, 
 			"K": k, 
 			"S": S, 
-			"Y": y}
+			"Y": y,
+			"hash": hash}
 
 
 ##########################################################
@@ -97,7 +105,7 @@ def verification_signature(data):
 def write_report(sign, path_report, path_orig):
 	with open(path_report, "w+") as f:
 		f.write("{0}/{1}\n".format(os.getcwd(), path_orig))
-		f.write("H = {0}\n".format(format(sign["H"], "032x")))
+		f.write("H = {0}\n".format(format(sign["hash"], "016x")))
 		f.write("Y = {0}\n".format(format(sign["Y"], "032x")))
 		f.write("K = {0}\n".format(format(sign["K"], "032x")))
 		f.write("S = {0}\n".format(format(sign["S"], "032x")))
@@ -116,17 +124,18 @@ def read_parse_report(path_report):
 				0).search(text).groupdict()
 
 	result.update((key, int(value, 16)) for key, value in check_sig.items())
+	result["H"] = hash_to_number(result["H"])
 	return result
 
 ##########################################################
+if options.data is None:
+	print "File with data must be provided"
+	exit()
 
 if options.action == "calc":
 	if options.report is None:
 		options.report = "report.txt"
 		print "Creating file for report ({0}/{1})".format(os.getcwd(), options.report)
-	if options.data is None:
-		print "File with data must be provided"
-		exit()
 
 	sign = get_signature(options.data)
 	verification_signature(sign)
@@ -134,11 +143,12 @@ if options.action == "calc":
 	print "\nSignature was successful write to {0}/{1}".format(os.getcwd(), options.report)
 
 elif options.action == "check":
-	if options.data is None:
-		print "File with data must be provided"
-		exit()
+	
 	data = read_parse_report(options.data)
-	sign = get_signature(data["path"])
+	if options.path is None:
+		sign = get_signature(data["path"])
+	else:
+		sign = get_signature(options.path)
 	
 	if data["H"] == sign["H"] and verification_signature(data) is True:
 		print "\nSignature is correct."

@@ -25,6 +25,10 @@ static size_t read_data(char **buff, const char *a_path)
     fseek(file, 0, SEEK_SET);
     log("Will read %d bytes\n", size);
     data = malloc(size);
+    if (data == NULL) {
+        perror("Error was");
+        exit(1);
+    }
     memset(data, 0, size);
     i = 0;
     while ((c = fgetc(file)) != EOF) {
