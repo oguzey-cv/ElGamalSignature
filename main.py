@@ -51,7 +51,8 @@ class ElGamalSignatureIO(object):
 		with open(path_report, "r") as f:
 			path = f.readline()
 			text = f.read()
-		result["path"] = path.strip('\n')
+		path = re.sub(r'\\', '/', path)
+		result["path"] = re.sub('[^a-zA-Z0-9/.]', '', path)
 		check_sig = re.compile(r"H\s*=\s*(?P<H>[0-9A-Fa-f]+)\s*Y\s*=\s*(?P<Y>[0-9A-Fa-f]+)\s*"
 						"K\s*=\s*(?P<K>[0-9A-Fa-f]+)\s*S\s*=\s*(?P<S>[0-9A-Fa-f]+)",
 					0).search(text).groupdict()
@@ -73,6 +74,9 @@ def do_calculation(options):
 
 def do_check(options):
 	readSign = ElGamalSignatureIO.readParseElGamalSignature(options.data)
+	if os.path.isfile(readSign["path"]) is False:
+		print "File does not exist '{0}'".format(readSign["path"])
+		exit()
 	if options.path is None:
 		hash = hashModule.get_hash(readSign["path"])
 	else:
